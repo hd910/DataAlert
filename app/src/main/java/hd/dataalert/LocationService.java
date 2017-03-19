@@ -1,7 +1,6 @@
 package hd.dataalert;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -17,12 +16,10 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
-import android.widget.TextView;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
-import java.util.ServiceConfigurationError;
 
 /**
  * Created by Hayde on 19-Mar-17.
@@ -81,8 +78,7 @@ public class LocationService extends Service implements LocationListener {
         if(address.size() > 0){
             locationAddress = address.get(0).getAddressLine(0)+ " " + address.get(0).getAddressLine(1);
         }
-
-        Log.v("///////", locationAddress);
+        
         sendResult(locationAddress);
 
     }
