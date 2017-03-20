@@ -32,6 +32,8 @@ public class LocationService extends Service implements LocationListener {
 
     static final public String LOCATION_RESULT = "com.hd.dataalert.location";
     static final public String LOCATION_MESSAGE = "com.hd.dataalert.locationMessage";
+    static final public String LOCATION_MESSAGE_LON = "com.hd.dataalert.locationMessageLongitude";
+    static final public String LOCATION_MESSAGE_LAT = "com.hd.dataalert.locationMessageLatitude";
 
     @Override
     public void onCreate() {
@@ -78,16 +80,18 @@ public class LocationService extends Service implements LocationListener {
         if(address.size() > 0){
             locationAddress = address.get(0).getAddressLine(0)+ " " + address.get(0).getAddressLine(1);
         }
-        
-        sendResult(locationAddress);
+
+        sendResult(locationAddress, location );
 
     }
 
 
-    public void sendResult(String message) {
+    public void sendResult(String message, Location location) {
         Intent intent = new Intent(LOCATION_RESULT);
         if(message != null)
             intent.putExtra(LOCATION_MESSAGE, message);
+        intent.putExtra(LOCATION_MESSAGE_LAT, location.getLatitude() );
+        intent.putExtra(LOCATION_MESSAGE_LON, location.getLongitude());
         broadcastManager.sendBroadcast(intent);
     }
 

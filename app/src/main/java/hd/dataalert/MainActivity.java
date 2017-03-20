@@ -17,10 +17,16 @@ import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.android.gms.location.Geofence;
+import com.google.android.gms.location.GeofencingRequest;
+
+import java.util.List;
+
 public class MainActivity extends AppCompatActivity {
 
     private BroadcastReceiver receiver;
     private TextView locationTextView;
+    private List<Geofence> geofenceList;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,8 +37,8 @@ public class MainActivity extends AppCompatActivity {
 
         locationTextView = (TextView)findViewById(R.id.locationText);
 
-        Button clickButton = (Button) findViewById(R.id.getGPSBtn);
-        clickButton.setOnClickListener( new View.OnClickListener() {
+        Button gpsBtn = (Button) findViewById(R.id.getGPSBtn);
+        gpsBtn.setOnClickListener( new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
@@ -44,6 +50,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+//        Button geofenceBtn = (Button) findViewById(R.id.setGeofenceBtn);
+//        geofenceBtn.setOnClickListener(new View.OnClickListener() {
+//
+//            @Override
+//            public void onClick(View v) {
+//                createGeofence();
+//            }
+//        });
 
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -62,13 +76,33 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String s = intent.getStringExtra(LocationService.LOCATION_MESSAGE);
+                Long longitude = intent.getLongExtra(LocationService.LOCATION_MESSAGE_LON, 0);
+                Long latitude = intent.getLongExtra(LocationService.LOCATION_MESSAGE_LAT, 0);
                 locationTextView.setText(s);
 
                 Intent i = new Intent(MainActivity.this, LocationService.class);
                 i.setAction("stopListening");
                 startService(i);
+                createGeofence(latitude, longitude);
             }
         };
+    }
+
+    private void createGeofence(Long lat, Long lon) {
+        //https://developers.google.com/android/reference/com/google/android/gms/location/Geofence.html#GEOFENCE_TRANSITION_ENTER
+        geofenceList.add(new Geofence.Builder()
+            .setRequestId("CustomGeoFence")
+            .setCircularRegion(lat, lon, 100)
+            .setExpirationDuration(Double.valueOf("2.592e+8").longValue())
+            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                .build());
+    }
+
+    private GeofencingRequest getGeofencingRequest() {
+        GeofencingRequest.Builder builder = new GeofencingRequest.Builder();
+        builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER);
+        builder.addGeofences(geofenceList);
+        return builder.build();
     }
 
     private boolean checkWifiStatus() {

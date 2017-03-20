@@ -27,6 +27,7 @@
             android:name=".LocationService"
             android:label="Location Service" >
         </service>
+        <service android:name=".GeofenceTransitionsIntentService"/>
     </application>
 
 </manifest>
