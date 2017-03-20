@@ -1,13 +1,18 @@
 package hd.dataalert;
 
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -17,16 +22,23 @@ import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.ResultCallback;
+import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingRequest;
+import com.google.android.gms.location.LocationServices;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements ResultCallback<Status>, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
 
     private BroadcastReceiver receiver;
     private TextView locationTextView;
     private List<Geofence> geofenceList;
+    private GoogleApiClient mGoogleApiClient;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,10 +47,17 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        locationTextView = (TextView)findViewById(R.id.locationText);
+        geofenceList = new ArrayList<>();
+
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API).build();
+
+        locationTextView = (TextView) findViewById(R.id.locationText);
 
         Button gpsBtn = (Button) findViewById(R.id.getGPSBtn);
-        gpsBtn.setOnClickListener( new View.OnClickListener() {
+        gpsBtn.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View v) {
@@ -83,7 +102,8 @@ public class MainActivity extends AppCompatActivity {
                 Intent i = new Intent(MainActivity.this, LocationService.class);
                 i.setAction("stopListening");
                 startService(i);
-                createGeofence(latitude, longitude);
+//                TODO: Fix geofence
+//                createGeofence(latitude, longitude);
             }
         };
     }
@@ -91,11 +111,24 @@ public class MainActivity extends AppCompatActivity {
     private void createGeofence(Long lat, Long lon) {
         //https://developers.google.com/android/reference/com/google/android/gms/location/Geofence.html#GEOFENCE_TRANSITION_ENTER
         geofenceList.add(new Geofence.Builder()
-            .setRequestId("CustomGeoFence")
-            .setCircularRegion(lat, lon, 100)
-            .setExpirationDuration(Double.valueOf("2.592e+8").longValue())
-            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER)
+                .setRequestId("CustomGeoFence")
+                .setCircularRegion(lat, lon, 100)
+                .setExpirationDuration(Double.valueOf("2.592e+8").longValue())
+                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER|
+                        Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build());
+
+        if (ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this,
+                        new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                        255);
+        } else {
+            LocationServices.GeofencingApi.addGeofences(
+                    mGoogleApiClient,
+                    getGeofencingRequest(),
+                    getGeofencePendingIntent()
+            ).setResultCallback(this);
+        }
     }
 
     private GeofencingRequest getGeofencingRequest() {
@@ -103,6 +136,18 @@ public class MainActivity extends AppCompatActivity {
         builder.setInitialTrigger(GeofencingRequest.INITIAL_TRIGGER_ENTER);
         builder.addGeofences(geofenceList);
         return builder.build();
+    }
+
+    private PendingIntent getGeofencePendingIntent() {
+        // Reuse the PendingIntent if we already have it.
+//        if (mGeofencePendingIntent != null) {
+//            return mGeofencePendingIntent;
+//        }
+        Intent intent = new Intent(this, GeofenceTransitionsIntentService.class);
+        // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when
+        // calling addGeofences() and removeGeofences().
+        return PendingIntent.getService(this, 0, intent, PendingIntent.
+                FLAG_UPDATE_CURRENT);
     }
 
     private boolean checkWifiStatus() {
@@ -144,5 +189,25 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onResult(@NonNull Status status) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
+
+    }
+
+    @Override
+    public void onConnected(@Nullable Bundle bundle) {
+
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
     }
 }
