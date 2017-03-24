@@ -6,13 +6,17 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
+import android.location.Address;
+import android.location.Geocoder;
 import android.os.Parcel;
 import android.util.Log;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Created by Hayde on 20-Mar-17.
@@ -20,38 +24,43 @@ import java.util.List;
 
 public class GeofenceTransitionsIntentService extends IntentService {
 
-    public GeofenceTransitionsIntentService(String name) {
-        super(name);
+    public GeofenceTransitionsIntentService() {
+        super("GeofenceTransitionIntentService");
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
-            String errorMessage = geofencingEvent.getErrorCode() + "";
-            Log.e("///////", errorMessage);
+
             return;
         }
 
-        // Get the transition type.
         int geofenceTransition = geofencingEvent.getGeofenceTransition();
 
         if (geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER || geofenceTransition == Geofence.GEOFENCE_TRANSITION_EXIT) {
-            // Get the geofences that were triggered. A single event can trigger
-            // multiple geofences.
-            List triggeringGeofences = geofencingEvent.getTriggeringGeofences();
+            Geocoder geocoder = new Geocoder(this, Locale.getDefault());
+            List<Address> address = null;
+            try {
+                address = geocoder.getFromLocation(geofencingEvent.getTriggeringLocation().getLatitude(), geofencingEvent.getTriggeringLocation().getLongitude(), 1);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            String geofenceMessage = "";
+            if(address.size() > 0){
+                geofenceMessage = address.get(0).getAddressLine(0)+ " " + address.get(0).getAddressLine(1);
+            }
+            sendNotification(geofenceMessage, geofenceTransition== Geofence.GEOFENCE_TRANSITION_ENTER?"Geofence Entered":"Geofence Exit");
         }
 
-        String geofenceMessage = geofencingEvent.getTriggeringLocation().toString();
 
-        sendNotification(geofenceMessage);
     }
 
-    private void sendNotification(String notificationMessage) {
+    private void sendNotification(String notificationMessage, String transition) {
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pIntent = PendingIntent.getActivity(this, 0, intent, 0);
         Notification notification  = new Notification.Builder(this)
-                .setContentTitle("Geofence Triggered")
+                .setContentTitle(transition)
                 .setContentText(notificationMessage)
                 .setSmallIcon(R.drawable.cast_ic_notification_small_icon)
                 .setContentIntent(pIntent)

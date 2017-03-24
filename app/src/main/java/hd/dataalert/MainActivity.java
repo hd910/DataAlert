@@ -69,14 +69,14 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
             }
         });
 
-//        Button geofenceBtn = (Button) findViewById(R.id.setGeofenceBtn);
-//        geofenceBtn.setOnClickListener(new View.OnClickListener() {
-//
-//            @Override
-//            public void onClick(View v) {
-//                createGeofence();
-//            }
-//        });
+        Button geofenceBtn = (Button) findViewById(R.id.setGeofenceBtn);
+        geofenceBtn.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                removeGeofence();
+            }
+        });
 
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -95,25 +95,27 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
             @Override
             public void onReceive(Context context, Intent intent) {
                 String s = intent.getStringExtra(LocationService.LOCATION_MESSAGE);
-                Long longitude = intent.getLongExtra(LocationService.LOCATION_MESSAGE_LON, 0);
-                Long latitude = intent.getLongExtra(LocationService.LOCATION_MESSAGE_LAT, 0);
+                Double longitude = intent.getDoubleExtra(LocationService.LOCATION_MESSAGE_LON, 0);
+                Double latitude = intent.getDoubleExtra(LocationService.LOCATION_MESSAGE_LAT, 0);
                 locationTextView.setText(s);
 
                 Intent i = new Intent(MainActivity.this, LocationService.class);
                 i.setAction("stopListening");
                 startService(i);
-//                TODO: Fix geofence
-//                createGeofence(latitude, longitude);
+                createGeofence(latitude, longitude);
             }
         };
     }
 
-    private void createGeofence(Long lat, Long lon) {
+    private void createGeofence(Double lat, Double lon) {
         //https://developers.google.com/android/reference/com/google/android/gms/location/Geofence.html#GEOFENCE_TRANSITION_ENTER
+        Snackbar.make(findViewById(android.R.id.content), "Creating geofence", Snackbar.LENGTH_LONG)
+                .show();
+
         geofenceList.add(new Geofence.Builder()
-                .setRequestId("CustomGeoFence")
+                .setRequestId("CustomGeofence")
                 .setCircularRegion(lat, lon, 100)
-                .setExpirationDuration(Double.valueOf("2.592e+8").longValue())
+                .setExpirationDuration(Double.valueOf("7.2e+6").longValue())
                 .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER|
                         Geofence.GEOFENCE_TRANSITION_EXIT)
                 .build());
@@ -150,6 +152,16 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
                 FLAG_UPDATE_CURRENT);
     }
 
+    private void removeGeofence(){
+        Snackbar.make(findViewById(android.R.id.content), "Removing geofence", Snackbar.LENGTH_LONG)
+                .show();
+        LocationServices.GeofencingApi.removeGeofences(
+                mGoogleApiClient,
+                // This is the same pending intent that was used in addGeofences().
+                getGeofencePendingIntent()
+        ).setResultCallback(this); // Result processed in onResult().
+    }
+
     private boolean checkWifiStatus() {
         WifiManager wifi = (WifiManager)getSystemService(Context.WIFI_SERVICE);
         return wifi.isWifiEnabled();
@@ -159,11 +171,13 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
     protected void onStop() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
         super.onStop();
+        mGoogleApiClient.disconnect();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+        mGoogleApiClient.connect();
         LocalBroadcastManager.getInstance(this).registerReceiver((receiver),
                 new IntentFilter(LocationService.LOCATION_RESULT)
         );
