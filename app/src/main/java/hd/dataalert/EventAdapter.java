@@ -33,6 +33,7 @@ public class EventAdapter extends ArrayAdapter<Event> {
     }
 
     public static class ViewHolder {
+        public TextView display_status;
         public TextView display_date;
         public TextView display_description;
 
@@ -46,6 +47,7 @@ public class EventAdapter extends ArrayAdapter<Event> {
                 vi = inflater.inflate(R.layout.event_list_item, null);
                 holder = new ViewHolder();
 
+                holder.display_status = (TextView) vi.findViewById(R.id.statusTxt);
                 holder.display_date = (TextView) vi.findViewById(R.id.dateTxt);
                 holder.display_description = (TextView) vi.findViewById(R.id.descriptionTxt);
 
@@ -57,6 +59,7 @@ public class EventAdapter extends ArrayAdapter<Event> {
 
 
 
+            holder.display_status.setText(eventList.get(position).getStatus());
             holder.display_date.setText(eventList.get(position).getDate());
             holder.display_description.setText(eventList.get(position).getDescription());
 

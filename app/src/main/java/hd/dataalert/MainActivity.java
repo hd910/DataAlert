@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -39,7 +41,7 @@ import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements ResultCallback<Status>, GoogleApiClient.OnConnectionFailedListener, GoogleApiClient.ConnectionCallbacks {
 
-    private BroadcastReceiver receiver;
+    private BroadcastReceiver locationReceiver;
     private TextView locationTextView;
     private List<Geofence> geofenceList;
     private GoogleApiClient mGoogleApiClient;
@@ -63,6 +65,7 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
 
         locationTextView = (TextView) findViewById(R.id.locationText);
 
+        //Onclick for Set Geofence
         Button gpsBtn = (Button) findViewById(R.id.getGPSBtn);
         gpsBtn.setOnClickListener(new View.OnClickListener() {
 
@@ -80,7 +83,8 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
             }
         });
 
-        Button geofenceBtn = (Button) findViewById(R.id.setGeofenceBtn);
+        //Onclick for Remove Geofence
+        Button geofenceBtn = (Button) findViewById(R.id.removeGeofenceBtn);
         geofenceBtn.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -89,22 +93,27 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
             }
         });
 
+        //Onclick for Clear Events
+        Button clearEventsBtn = (Button) findViewById(R.id.clearEventsBtn);
+        clearEventsBtn.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View v) {
+                db.deleteAllEvents();
+                refreshEvents();
+            }
+        });
 
+        //Onclick for FAB
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                boolean wifiNeeded = checkWifiStatus();
-                Snackbar.make(view, wifiNeeded ? "Wifi is Enabled" : "Wifi is Off", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-                checkWifiStatus();
-
-                populateEvents();
+                refreshEvents();
             }
         });
 
-
-        receiver = new BroadcastReceiver() {
+        //Receiver for LOCATION_RESULT intent
+        locationReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
                 String s = intent.getStringExtra(LocationService.LOCATION_MESSAGE);
@@ -119,20 +128,15 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
             }
         };
 
-        populateEvents();
+        refreshEvents();
     }
 
-    private void populateEvents() {
+    private void refreshEvents() {
         ListView lv = (ListView) findViewById(R.id.eventList);
-
         ArrayList<Event> eventList;
-
         eventList = db.getAllEvents();
-
         ArrayAdapter<Event> arrayAdapter = new EventAdapter(this, 0, eventList );
-
         lv.setAdapter(arrayAdapter);
-
     }
 
     private boolean hasPermission() {
@@ -186,8 +190,6 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
 //            return mGeofencePendingIntent;
 //        }
         Intent intent = new Intent(this, GeofenceTransitionsIntentService.class);
-        // We use FLAG_UPDATE_CURRENT so that we get the same pending intent back when
-        // calling addGeofences() and removeGeofences().
         return PendingIntent.getService(this, 0, intent, PendingIntent.
                 FLAG_UPDATE_CURRENT);
     }
@@ -197,19 +199,13 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
                 .show();
         LocationServices.GeofencingApi.removeGeofences(
                 mGoogleApiClient,
-                // This is the same pending intent that was used in addGeofences().
                 getGeofencePendingIntent()
         ).setResultCallback(this); // Result processed in onResult().
     }
 
-    private boolean checkWifiStatus() {
-        WifiManager wifi = (WifiManager)getSystemService(Context.WIFI_SERVICE);
-        return wifi.isWifiEnabled();
-    }
-
     @Override
     protected void onStop() {
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(locationReceiver);
         super.onStop();
         mGoogleApiClient.disconnect();
     }
@@ -218,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
     protected void onStart() {
         super.onStart();
         mGoogleApiClient.connect();
-        LocalBroadcastManager.getInstance(this).registerReceiver((receiver),
+        LocalBroadcastManager.getInstance(this).registerReceiver((locationReceiver),
                 new IntentFilter(LocationService.LOCATION_RESULT)
         );
     }

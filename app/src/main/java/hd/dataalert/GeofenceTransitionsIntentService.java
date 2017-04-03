@@ -4,9 +4,13 @@ import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiManager;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
@@ -46,23 +50,26 @@ public class GeofenceTransitionsIntentService extends IntentService {
             }
             String geofenceMessage = "";
             if(address.size() > 0){
-                geofenceMessage = address.get(0).getAddressLine(0)+ " " + address.get(0).getAddressLine(1);
+                geofenceMessage += isUsingWiFi()?"You are using WiFi \n": "You are using Data \n";
+                geofenceMessage += address.get(0).getAddressLine(0)+ " " + address.get(0).getAddressLine(1);
+
             }
             sendNotification(geofenceMessage, geofenceTransition== Geofence.GEOFENCE_TRANSITION_ENTER?"Geofence Entered":"Geofence Exit");
 
 
-            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy-hh-mm-ss");
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd/MM-hh:mm");
             String date = simpleDateFormat.format(new Date());
+            String status = geofenceTransition == Geofence.GEOFENCE_TRANSITION_ENTER? "Enter":"Leave";
 
-            recordEvent(date, geofenceMessage);
+            recordEvent(status, date, geofenceMessage);
         }
 
 
     }
 
-    private void recordEvent(String date, String geofenceMessage) {
+    private void recordEvent(String status,String date, String geofenceMessage) {
         DatabaseHandler db = new DatabaseHandler(getApplicationContext());
-        Event e = new Event(date, geofenceMessage);
+        Event e = new Event(status,date, geofenceMessage);
         db.addEvent(e);
     }
 
@@ -79,5 +86,26 @@ public class GeofenceTransitionsIntentService extends IntentService {
                 (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
         notificationManager.notify(0, notification);
+    }
+
+    private boolean checkWifiStatus() {
+        WifiManager wifi = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+        return wifi.isWifiEnabled();
+    }
+
+    private boolean isUsingWiFi() {
+        WifiManager wifi = (WifiManager)getSystemService(Context.WIFI_SERVICE);
+        //WiFi ON -> Need to check internet connectivity
+        if(wifi.isWifiEnabled()){
+            ConnectivityManager connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+
+            //true if internet is connected and using WIFI
+            return (networkInfo != null && networkInfo.isConnected() && (networkInfo.getType() == ConnectivityManager.TYPE_WIFI));
+
+        }
+
+        //WiFi OFF -> need to alert user
+        return false;
     }
 }

@@ -7,7 +7,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Created by Hayde on 03-Apr-17.
@@ -20,6 +19,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     private static final String TABLE_EVENTS = "events";
 
     private static final String KEY_ID = "id";
+    private static final String KEY_STATUS = "status";
     private static final String KEY_DATE = "date";
     private static final String KEY_DESCRIPTION = "description";
 
@@ -30,7 +30,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         String CREATE_EVENTS_TABLE = "CREATE TABLE " + TABLE_EVENTS + "("
-                + KEY_ID + " INTEGER PRIMARY KEY," + KEY_DATE + " TEXT,"
+                + KEY_ID + " INTEGER PRIMARY KEY," + KEY_STATUS + " TEXT," +  KEY_DATE + " TEXT,"
                 + KEY_DESCRIPTION + " TEXT" + ")";
         db.execSQL(CREATE_EVENTS_TABLE);
     }
@@ -48,6 +48,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     void addEvent(Event event){
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues values = new ContentValues();
+        values.put(KEY_STATUS, event.getStatus());
         values.put(KEY_DATE, event.getDate());
         values.put(KEY_DESCRIPTION, event.getDescription());
 
@@ -67,7 +68,7 @@ public class DatabaseHandler extends SQLiteOpenHelper {
             cursor.moveToFirst();
 
         Event event = new Event(Integer.parseInt(cursor.getString(0)),
-                cursor.getString(1), cursor.getString(2));
+                cursor.getString(1), cursor.getString(2), cursor.getString(3));
         // return contact
         return event;
     }
@@ -86,8 +87,9 @@ public class DatabaseHandler extends SQLiteOpenHelper {
             do {
                 Event contact = new Event();
                 contact.setId(Integer.parseInt(cursor.getString(0)));
-                contact.setDate(cursor.getString(1));
-                contact.setDescription(cursor.getString(2));
+                contact.setStatus(cursor.getString(1));
+                contact.setDate(cursor.getString(2));
+                contact.setDescription(cursor.getString(3));
                 // Adding contact to list
                 eventList.add(contact);
             } while (cursor.moveToNext());
@@ -95,5 +97,12 @@ public class DatabaseHandler extends SQLiteOpenHelper {
 
         // return contact list
         return eventList;
+    }
+
+    //Delete all data
+    public void deleteAllEvents(){
+        SQLiteDatabase db = this.getWritableDatabase();
+        db.execSQL("delete from "+ TABLE_EVENTS);
+
     }
 }

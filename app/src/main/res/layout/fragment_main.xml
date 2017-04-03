@@ -24,12 +24,23 @@
         android:text="Get Location and set geofence"
         android:layout_marginTop="10dp"
         />
-
-    <Button
-        android:id="@+id/setGeofenceBtn"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Remove Geofence"/>
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/removeGeofenceBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Remove Geofence"/>
+
+        <Button
+            android:id="@+id/clearEventsBtn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Clear Events"/>
+    </LinearLayout>
+
 
     <ListView
         android:id="@+id/eventList"
