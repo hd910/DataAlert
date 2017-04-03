@@ -1,5 +1,7 @@
 package hd.dataalert;
 
+import android.*;
+import android.Manifest;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -61,11 +63,15 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
 
             @Override
             public void onClick(View v) {
-
-                locationTextView.setText("");
-                Intent intent = new Intent(MainActivity.this, LocationService.class);
-                intent.setAction("startListening");
-                startService(intent);
+                checkPermission();
+                if (hasPermission()) {
+                    locationTextView.setText("");
+                    Intent intent = new Intent(MainActivity.this, LocationService.class);
+                    intent.setAction("startListening");
+                    startService(intent);
+                }else{
+                    //TODO: Permission not granted
+                }
             }
         });
 
@@ -105,6 +111,18 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
                 createGeofence(latitude, longitude);
             }
         };
+    }
+
+    private boolean hasPermission() {
+        return ActivityCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    private void checkPermission() {
+        if (!hasPermission()) {
+            ActivityCompat.requestPermissions(this,
+                    new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION},
+                    255);
+        }
     }
 
     private void createGeofence(Double lat, Double lon) {
