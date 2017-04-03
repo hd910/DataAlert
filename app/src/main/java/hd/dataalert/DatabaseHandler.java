@@ -73,8 +73,8 @@ public class DatabaseHandler extends SQLiteOpenHelper {
     }
 
     // Getting All Contacts
-    public List<Event> getAllEvents() {
-        List<Event> eventList = new ArrayList<>();
+    public ArrayList<Event> getAllEvents() {
+        ArrayList<Event> eventList = new ArrayList<>();
         // Select All Query
         String selectQuery = "SELECT  * FROM " + TABLE_EVENTS;
 

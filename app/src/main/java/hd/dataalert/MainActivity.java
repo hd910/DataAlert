@@ -21,7 +21,9 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -41,6 +43,7 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
     private TextView locationTextView;
     private List<Geofence> geofenceList;
     private GoogleApiClient mGoogleApiClient;
+    private DatabaseHandler db;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +51,8 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
+        db = new DatabaseHandler(this);
 
         geofenceList = new ArrayList<>();
 
@@ -93,6 +98,8 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
                 Snackbar.make(view, wifiNeeded ? "Wifi is Enabled" : "Wifi is Off", Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
                 checkWifiStatus();
+
+                populateEvents();
             }
         });
 
@@ -111,6 +118,21 @@ public class MainActivity extends AppCompatActivity implements ResultCallback<St
                 createGeofence(latitude, longitude);
             }
         };
+
+        populateEvents();
+    }
+
+    private void populateEvents() {
+        ListView lv = (ListView) findViewById(R.id.eventList);
+
+        ArrayList<Event> eventList;
+
+        eventList = db.getAllEvents();
+
+        ArrayAdapter<Event> arrayAdapter = new EventAdapter(this, 0, eventList );
+
+        lv.setAdapter(arrayAdapter);
+
     }
 
     private boolean hasPermission() {

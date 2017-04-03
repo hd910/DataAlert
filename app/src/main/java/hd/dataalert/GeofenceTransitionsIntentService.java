@@ -4,17 +4,16 @@ import android.app.IntentService;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Intent;
 import android.location.Address;
 import android.location.Geocoder;
-import android.os.Parcel;
-import android.util.Log;
 
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingEvent;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -32,7 +31,6 @@ public class GeofenceTransitionsIntentService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         GeofencingEvent geofencingEvent = GeofencingEvent.fromIntent(intent);
         if (geofencingEvent.hasError()) {
-
             return;
         }
 
@@ -51,9 +49,21 @@ public class GeofenceTransitionsIntentService extends IntentService {
                 geofenceMessage = address.get(0).getAddressLine(0)+ " " + address.get(0).getAddressLine(1);
             }
             sendNotification(geofenceMessage, geofenceTransition== Geofence.GEOFENCE_TRANSITION_ENTER?"Geofence Entered":"Geofence Exit");
+
+
+            SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd-MM-yyyy-hh-mm-ss");
+            String date = simpleDateFormat.format(new Date());
+
+            recordEvent(date, geofenceMessage);
         }
 
 
+    }
+
+    private void recordEvent(String date, String geofenceMessage) {
+        DatabaseHandler db = new DatabaseHandler(getApplicationContext());
+        Event e = new Event(date, geofenceMessage);
+        db.addEvent(e);
     }
 
     private void sendNotification(String notificationMessage, String transition) {

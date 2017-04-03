@@ -18,6 +18,11 @@ public class Event {
         this.description = description;
     }
 
+    public Event(String date, String description){
+        this.date = date;
+        this.description = description;
+    }
+
     public int getId(){
         return id;
     }
